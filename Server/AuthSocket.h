@@ -58,6 +58,16 @@ public:
     ACE_Thread_Mutex patcherLock;
 
 private:
+	enum eStatus
+    {
+		STATUS_CHALLENGE,
+		STATUS_LOGON_PROOF,
+		STATUS_RECON_PROOF,
+		STATUS_PATCH,      // unused in CMaNGOS
+		STATUS_AUTHED,
+		STATUS_CLOSED
+    };
+	
     RealmSocket& socket_;
     RealmSocket& socket(void) { return socket_; }
 
@@ -66,7 +76,7 @@ private:
     BigNumber K;
     BigNumber _reconnectProof;
 
-    bool _authed;
+    eStatus _status;
 
     std::string _login;
     std::string _tokenKey;
