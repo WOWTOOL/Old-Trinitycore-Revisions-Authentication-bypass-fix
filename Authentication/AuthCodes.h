@@ -33,6 +33,16 @@ enum eAuthCmd
     XFER_CANCEL                                  = 0x34
 };
 
+enum eStatus
+{
+	STATUS_CHALLENGE,
+	STATUS_LOGON_PROOF,
+	STATUS_RECON_PROOF,
+	STATUS_PATCH,      // unused in CMaNGOS
+	STATUS_AUTHED,
+	STATUS_CLOSED
+};
+
 enum AuthResult
 {
     WOW_SUCCESS                                  = 0x00,
