@@ -161,14 +161,14 @@ private:
 
 const AuthHandler table[] =
 {
-    { AUTH_LOGON_CHALLENGE,     STATUS_CHALLENGE,   &AuthSocket::_HandleLogonChallenge      },
-    { AUTH_LOGON_PROOF,         STATUS_LOGON_PROOF, &AuthSocket::_HandleLogonProof          },
-    { AUTH_RECONNECT_CHALLENGE, STATUS_CHALLENGE,   &AuthSocket::_HandleReconnectChallenge  },
-    { AUTH_RECONNECT_PROOF,     STATUS_RECON_PROOF, &AuthSocket::_HandleReconnectProof      },
-    { REALM_LIST,               STATUS_AUTHED,      &AuthSocket::_HandleRealmList           },
-    { XFER_ACCEPT,              STATUS_PATCH,       &AuthSocket::_HandleXferAccept          },
-    { XFER_RESUME,              STATUS_PATCH,       &AuthSocket::_HandleXferResume          },
-    { XFER_CANCEL,              STATUS_PATCH,       &AuthSocket::_HandleXferCancel          }
+    { AUTH_LOGON_CHALLENGE,     0,   	 &AuthSocket::_HandleLogonChallenge      },
+    { AUTH_LOGON_PROOF,         1, 		 &AuthSocket::_HandleLogonProof          },
+    { AUTH_RECONNECT_CHALLENGE, 0,   	 &AuthSocket::_HandleReconnectChallenge  },
+    { AUTH_RECONNECT_PROOF,     2, 		 &AuthSocket::_HandleReconnectProof      },
+    { REALM_LIST,               4,       &AuthSocket::_HandleRealmList           },
+    { XFER_ACCEPT,              3,       &AuthSocket::_HandleXferAccept          },
+    { XFER_RESUME,              3,       &AuthSocket::_HandleXferResume          },
+    { XFER_CANCEL,              3,       &AuthSocket::_HandleXferCancel          }
 };
 
 #define AUTH_TOTAL_COMMANDS 8
@@ -178,8 +178,7 @@ Patcher PatchesCache;
 
 // Constructor - set the N and g values for SRP6
 AuthSocket::AuthSocket(RealmSocket& socket) :
-    pPatch(NULL), socket_(socket), _status(STATUS_CHALLENGE), _build(0),
-    _expversion(0), _accountSecurityLevel(SEC_PLAYER)
+    pPatch(NULL), socket_(socket), _status(0), _build(0), _expversion(0), _accountSecurityLevel(SEC_PLAYER)
 {
     N.SetHexStr("894B645E89E1535BBDAD5B8B290650530801B18EBFBF5E8FAB3C82872A3E9BB7");
     g.SetDword(7);
@@ -226,7 +225,7 @@ void AuthSocket::OnRead()
         // Circle through known commands and call the correct command handler
         for (i = 0; i < AUTH_TOTAL_COMMANDS; ++i)
         {
-            if ((uint8)table[i].cmd == _cmd && table[i].status != _status)
+            if ((uint8)table[i].cmd == _cmd && table[i].status == _status)
             {
                 TC_LOG_DEBUG("server.authserver", "Got data for cmd %u recv length %u", (uint32)_cmd, (uint32)socket().recv_len());
 
@@ -310,7 +309,7 @@ bool AuthSocket::_HandleLogonChallenge()
         return false;
 
 	///- Session is closed unless overriden
-     _status = STATUS_CLOSED;
+     _status = 5;
 	 
     //No big fear of memory outage (size is int16, i.e. < 65536)
     buf.resize(remaining + buf.size() + 1);
@@ -522,7 +521,7 @@ bool AuthSocket::_HandleLogonChallenge()
                             _login.c_str (), ch->country[3], ch->country[2], ch->country[1], ch->country[0], GetLocaleByName(_localizationName)
                         );
 					///- All good, await client's proof
- +                  _status = STATUS_LOGON_PROOF;
+                    _status = 1;
                 }
             }
         }
@@ -545,7 +544,7 @@ bool AuthSocket::_HandleLogonProof()
         return false;
 
 	///- Session is closed unless overriden
-    _status = STATUS_CLOSED;
+    _status = 5;
  
     // If the client has no valid version
     if (_expversion == NO_VALID_EXP_FLAG)
@@ -697,7 +696,7 @@ bool AuthSocket::_HandleLogonProof()
         }
 
        ///- Set _status to authed!
-       _status = STATUS_AUTHED;
+       _status = 4;
 
     }
     else
@@ -778,7 +777,7 @@ bool AuthSocket::_HandleReconnectChallenge()
         return false;
 	
 	///- Session is closed unless overriden
-    _status = STATUS_CLOSED;
+    _status = 5;
  
     // No big fear of memory outage (size is int16, i.e. < 65536)
     buf.resize(remaining + buf.size() + 1);
@@ -822,7 +821,7 @@ bool AuthSocket::_HandleReconnectChallenge()
     K.SetHexStr ((*result)[0].GetCString());
 	
 	///- All good, await client's proof
-    _status = STATUS_RECON_PROOF;
+    _status = 2;
 	 
     // Sending response
     ByteBuffer pkt;
@@ -845,7 +844,7 @@ bool AuthSocket::_HandleReconnectProof()
         return false;
 
 	///- Session is closed unless overriden
-    _status = STATUS_CLOSED;
+    _status = 5;
  
     if (_login.empty() || !_reconnectProof.GetNumBytes() || !K.GetNumBytes())
         return false;
@@ -869,7 +868,7 @@ bool AuthSocket::_HandleReconnectProof()
         socket().send((char const*)pkt.contents(), pkt.size());
         
 		///- Set _status to authed!
-        _status = STATUS_AUTHED;
+        _status = 4;
  
         return true;
     }
