@@ -19,5 +19,5 @@ code and rewrite it using another type of variables due to some compiling issues
 
 # credit
 Credit for the initial discovery goes to Chaosvex.  Credit for the discovery of method two goes to
-Daemon of nostalrius.org, who found the second issue when he and I were discussing the first one. 
+Daemon of nostalrius.org, who found the second issue when he and namreeb were discussing the first one. 
 And me for updating the code to work with trinitycore revisions between 2013 - 2014.
