@@ -202,7 +202,9 @@ void AuthSocket::OnClose(void)
 void AuthSocket::OnRead()
 {
     #define MAX_AUTH_LOGON_CHALLENGES_IN_A_ROW 3
+	#define MAX_REALMLIST_REFRESH_IN_A_ROW 5
     uint32 challengesInARow = 0;
+	uint32 realmListShow = 0;
     uint8 _cmd;
     while (1)
     {
@@ -211,10 +213,18 @@ void AuthSocket::OnRead()
 
         if (_cmd == AUTH_LOGON_CHALLENGE)
         {
-            ++challengesInARow;
-            if (challengesInARow == MAX_AUTH_LOGON_CHALLENGES_IN_A_ROW)
+            if (++challengesInARow == MAX_AUTH_LOGON_CHALLENGES_IN_A_ROW)
             {
                 TC_LOG_WARN("server.authserver", "Got %u AUTH_LOGON_CHALLENGE in a row from '%s', possible ongoing DoS", challengesInARow, socket().getRemoteAddress().c_str());
+                socket().shutdown();
+                return;
+            }
+        }
+        if (_cmd == REALM_LIST)
+        {
+            if (++realmListShow == MAX_REALMLIST_REFRESH_IN_A_ROW)
+            {
+                TC_LOG_WARN("server.authserver", "Got %u REALM_LIST in a row from '%s', possible ongoing DoS", challengesInARow, socket().getRemoteAddress().c_str());
                 socket().shutdown();
                 return;
             }
